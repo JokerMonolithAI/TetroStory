@@ -7,7 +7,7 @@ class TetrisGame {
         this.ctx = this.canvas.getContext('2d');
         this.blockSize = 20;
         this.cols = 10;
-        this.rows = 18;
+        this.rows = 13;
         
         // 修改画布初始化
         this.initCanvas();
