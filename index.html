@@ -46,39 +46,40 @@
     <div class="game-wrapper">
         <header class="bg-white shadow-sm py-2">
             <h1 class="text-xl font-bold text-center text-gray-800">方块总动员</h1>
-            <div class="score-container flex justify-center items-center bg-gray-800/60 rounded-lg p-2 mx-2 mt-2 text-white">
-                <div class="flex gap-8">
-                    <div>
-                        <span class="text-gray-400">分数</span>
-                        <div id="score" class="text-xl font-bold">0</div>
-                    </div>
-                    <div>
-                        <span class="text-gray-400">等级</span>
-                        <div id="level" class="text-xl font-bold">1</div>
-                    </div>
-                    <div>
-                        <span class="text-gray-400">最高分</span>
-                        <div id="highScore" class="text-xl font-bold">0</div>
-                    </div>
-                </div>
-            </div>
         </header>
 
         <main class="flex-1 p-2 flex items-center justify-center overflow-hidden">
             <div class="game-container bg-white p-4 rounded-xl shadow-lg w-full max-w-sm">
-                <canvas id="gameCanvas" class="border-2 border-gray-200 rounded-lg w-full"></canvas>
-                
-                <div class="controls mt-2 space-y-1">
-                    <button id="startBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95">
-                        开始游戏
-                    </button>
-                    <button id="restartBtn" style="display: none" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95">
-                        重新开始
-                    </button>
-                    <button id="pauseBtn" style="display: none" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95">
-                        暂停游戏
-                    </button>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex gap-4 bg-gray-800/60 rounded-lg p-2 text-white">
+                        <div>
+                            <span class="text-gray-400 text-sm">分数</span>
+                            <div id="score" class="text-lg font-bold">0</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 text-sm">等级</span>
+                            <div id="level" class="text-lg font-bold">1</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 text-sm">最高分</span>
+                            <div id="highScore" class="text-lg font-bold">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-1 flex-1">
+                        <button id="startBtn" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-1 px-2 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 text-sm">
+                            开始
+                        </button>
+                        <button id="restartBtn" style="display: none" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-1 px-2 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 text-sm">
+                            重玩
+                        </button>
+                        <button id="pauseBtn" style="display: none" class="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-1 px-2 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105 active:scale-95 text-sm">
+                            暂停
+                        </button>
+                    </div>
                 </div>
+
+                <canvas id="gameCanvas" class="border-2 border-gray-200 rounded-lg w-full"></canvas>
 
                 <div class="mobile-controls mt-3">
                     <div class="flex justify-center items-center gap-4">
