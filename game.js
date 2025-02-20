@@ -1,14 +1,16 @@
+console.log('游戏脚本开始加载');
+
 class TetrisGame {
     constructor() {
+        console.log('TetrisGame 构造函数被调用');
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.blockSize = 30;
+        this.blockSize = 20;
         this.cols = 10;
-        this.rows = 20;
+        this.rows = 15;
         
-        // 设置画布大小
-        this.canvas.width = this.blockSize * this.cols;
-        this.canvas.height = this.blockSize * this.rows;
+        // 修改画布初始化
+        this.initCanvas();
         
         // 游戏状态
         this.grid = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
@@ -16,15 +18,29 @@ class TetrisGame {
         this.gameOver = false;
         this.currentPiece = null;
         
-        // 定义俄罗斯方块的形状
+        // 修改俄罗斯方块的形状定义
         this.shapes = {
-            I: [[1, 1, 1, 1]],
-            L: [[1, 0], [1, 0], [1, 1]],
-            J: [[0, 1], [0, 1], [1, 1]],
-            O: [[1, 1], [1, 1]],
-            Z: [[1, 1, 0], [0, 1, 1]],
-            S: [[0, 1, 1], [1, 1, 0]],
-            T: [[1, 1, 1], [0, 1, 0]]
+            I: [[0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0]],
+            L: [[0, 0, 1],
+                [1, 1, 1],
+                [0, 0, 0]],
+            J: [[1, 0, 0],
+                [1, 1, 1],
+                [0, 0, 0]],
+            O: [[1, 1],
+                [1, 1]],
+            Z: [[1, 1, 0],
+                [0, 1, 1],
+                [0, 0, 0]],
+            S: [[0, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0]],
+            T: [[0, 1, 0],
+                [1, 1, 1],
+                [0, 0, 0]]
         };
         
         // 定义颜色
@@ -57,15 +73,16 @@ class TetrisGame {
         this.initControls();
         this.initMobileControls();
         
-        // 初始化分数系统
+        // 修改初始化分数系统
         this.loadHighScores();
         
-        // 添加游戏速度相关属性
-        this.baseSpeed = 1000; // 基础速度1秒
+        // 修改游戏速度相关属性
+        this.baseSpeed = 800; // 调整基础速度为800ms
         this.currentSpeed = this.baseSpeed;
         this.level = 1;
         this.dropCounter = 0;
         this.lastTime = 0;
+        this.isRunning = false; // 添加游戏运行状态标志
 
         // 修改模态框关闭事件
         document.getElementById('closeModal').addEventListener('click', () => {
@@ -75,6 +92,22 @@ class TetrisGame {
             document.getElementById('restartBtn').style.display = 'block';
             this.start(); // 重新开始游戏
         });
+    }
+
+    // 添加画布初始化方法
+    initCanvas() {
+        const container = this.canvas.parentElement;
+        const containerWidth = container.clientWidth - 32; // 减去padding
+        
+        // 计算合适的方块大小
+        this.blockSize = Math.floor(Math.min(
+            containerWidth / this.cols,
+            (window.innerHeight * 0.5) / this.rows // 限制高度为视口高度的50%
+        ));
+        
+        // 设置画布大小
+        this.canvas.width = this.blockSize * this.cols;
+        this.canvas.height = this.blockSize * this.rows;
     }
 
     // 初始化游戏控制
@@ -133,44 +166,63 @@ class TetrisGame {
 
     // 开始游戏
     start() {
+        console.log('游戏开始初始化'); // 调试日志
+        
+        this.initCanvas();
+        
         this.gameOver = false;
         this.score = 0;
         this.level = 1;
         this.currentSpeed = this.baseSpeed;
         this.dropCounter = 0;
         this.lastTime = 0;
+        this.isRunning = true;
         this.grid = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
         this.currentPiece = null;
+        
+        // 生成第一个方块
+        if (!this.spawnPiece()) {
+            console.error('无法生成方块');
+            return;
+        }
         
         // 更新显示
         document.getElementById('level').textContent = this.level;
         document.getElementById('score').textContent = this.score;
-        document.getElementById('gameOverModal').classList.add('hidden');
-        document.getElementById('gameOverModal').style.display = 'none';
+        document.getElementById('highScore').textContent = this.getHighScore();
         
-        // 显示暂停按钮
-        document.getElementById('pauseBtn').style.display = 'block';
-        document.getElementById('pauseBtn').textContent = '暂停游戏';
+        // 隐藏游戏结束模态框
+        const gameOverModal = document.getElementById('gameOverModal');
+        if (gameOverModal) {
+            gameOverModal.classList.add('hidden');
+            gameOverModal.style.display = 'none';
+        }
         
         // 确保游戏未暂停
         this.isPaused = false;
         
+        console.log('开始游戏循环'); // 调试日志
         // 开始游戏循环
-        requestAnimationFrame(time => this.gameLoop(time));
+        this.gameLoop(performance.now());
     }
 
     // 游戏主循环
-    gameLoop(currentTime = 0) {
-        if (this.gameOver) {
-            // 确保游戏结束时显示模态框
-            const modal = document.getElementById('gameOverModal');
-            const finalScore = document.getElementById('finalScore');
-            finalScore.textContent = this.score;
-            modal.classList.remove('hidden');
-            return;
-        }
-
-        if (this.isPaused) {
+    gameLoop(currentTime) {
+        console.log('游戏循环运行中'); // 调试日志
+        
+        if (!this.isRunning || this.gameOver || this.isPaused) {
+            console.log('游戏状态:', {
+                isRunning: this.isRunning,
+                gameOver: this.gameOver,
+                isPaused: this.isPaused
+            });
+            if (this.gameOver) {
+                const modal = document.getElementById('gameOverModal');
+                const finalScore = document.getElementById('finalScore');
+                finalScore.textContent = this.score;
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
             return;
         }
 
@@ -179,30 +231,20 @@ class TetrisGame {
         this.dropCounter += deltaTime;
 
         if (this.dropCounter > this.currentSpeed) {
-            if (!this.currentPiece) {
+            this.dropCounter = 0;
+            if (!this.movePiece(0, 1)) {
+                this.placePiece();
+                this.clearLines();
                 if (!this.spawnPiece()) {
-                    // 如果无法生成新方块，游戏结束
                     this.gameOver = true;
                     this.saveScore();
                     return;
                 }
-            } else {
-                if (!this.movePiece(0, 1)) {
-                    this.placePiece();
-                    this.clearLines();
-                    if (!this.spawnPiece()) {
-                        // 如果无法生成新方块，游戏结束
-                        this.gameOver = true;
-                        this.saveScore();
-                        return;
-                    }
-                }
             }
-            this.dropCounter = 0;
         }
-        
+
         this.draw();
-        requestAnimationFrame(time => this.gameLoop(time));
+        requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     // 更新游戏状态
@@ -226,6 +268,8 @@ class TetrisGame {
 
     // 绘制游戏画面
     draw() {
+        if (!this.ctx) return;  // 添加安全检查
+        
         // 清空画布
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
@@ -247,34 +291,32 @@ class TetrisGame {
         });
         scores.sort((a, b) => b.score - a.score);
         localStorage.setItem('tetrisScores', JSON.stringify(scores.slice(0, 10)));
-        this.updateLeaderboard();
+        
+        // 更新最高分显示
+        document.getElementById('highScore').textContent = Math.max(...scores.map(s => s.score));
         
         // 显示游戏结束模态框
         const modal = document.getElementById('gameOverModal');
         const finalScore = document.getElementById('finalScore');
         finalScore.textContent = this.score;
         modal.classList.remove('hidden');
-        modal.style.display = 'flex'; // 确保模态框显示
+        modal.style.display = 'flex';
     }
 
     // 加载最高分
     loadHighScores() {
         const scores = JSON.parse(localStorage.getItem('tetrisScores') || '[]');
-        this.updateLeaderboard(scores);
+        if (scores.length > 0) {
+            document.getElementById('highScore').textContent = Math.max(...scores.map(s => s.score));
+        }
     }
 
     // 更新排行榜显示
     updateLeaderboard() {
         const scores = JSON.parse(localStorage.getItem('tetrisScores') || '[]');
-        const leaderboardList = document.getElementById('leaderboardList');
-        leaderboardList.innerHTML = scores
-            .map((score, index) => `
-                <div class="score-item">
-                    ${index + 1}. ${score.score}分 - 
-                    ${new Date(score.date).toLocaleDateString()}
-                </div>
-            `)
-            .join('');
+        if (scores.length > 0) {
+            document.getElementById('highScore').textContent = Math.max(...scores.map(s => s.score));
+        }
     }
 
     // 生成新方块
@@ -282,15 +324,18 @@ class TetrisGame {
         const shapes = Object.keys(this.shapes);
         const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
         
+        // 创建形状的深拷贝
+        const shape = this.shapes[randomShape].map(row => [...row]);
+        
         this.currentPiece = {
-            shape: this.shapes[randomShape],
+            shape: shape,
             type: randomShape,
-            x: Math.floor(this.cols / 2) - Math.floor(this.shapes[randomShape][0].length / 2),
+            x: Math.floor((this.cols - shape[0].length) / 2),
             y: 0
         };
         
-        // 如果新生成的方块就发生碰撞，说明游戏结束
-        if (this.checkCollision()) {
+        // 检查是否可以放置新方块
+        if (this.checkCollision(0, 0, this.currentPiece)) {
             this.gameOver = true;
             this.saveScore();
             return false;
@@ -332,15 +377,24 @@ class TetrisGame {
 
     // 旋转方块
     rotatePiece() {
-        const rotated = {
+        const shape = this.currentPiece.shape;
+        const N = shape.length;
+        const rotated = Array(N).fill().map(() => Array(N).fill(0));
+        
+        // 矩阵旋转
+        for (let y = 0; y < N; y++) {
+            for (let x = 0; x < N; x++) {
+                rotated[x][N - 1 - y] = shape[y][x];
+            }
+        }
+        
+        const piece = {
             ...this.currentPiece,
-            shape: this.currentPiece.shape[0].map((_, i) =>
-                this.currentPiece.shape.map(row => row[i]).reverse()
-            )
+            shape: rotated
         };
         
-        if (!this.checkCollision(0, 0, rotated)) {
-            this.currentPiece = rotated;
+        if (!this.checkCollision(0, 0, piece)) {
+            this.currentPiece = piece;
         }
     }
 
@@ -398,6 +452,8 @@ class TetrisGame {
 
     // 绘制网格
     drawGrid() {
+        if (!this.ctx) return;  // 添加安全检查
+        
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.cols; x++) {
                 // 绘制网格线
@@ -435,6 +491,8 @@ class TetrisGame {
 
     // 绘制当前方块
     drawPiece() {
+        if (!this.currentPiece || !this.ctx) return;
+        
         const piece = this.currentPiece;
         const baseColor = this.colors[piece.type];
         
@@ -444,7 +502,6 @@ class TetrisGame {
                     const xPos = (piece.x + x) * this.blockSize;
                     const yPos = (piece.y + y) * this.blockSize;
                     
-                    // 创建渐变
                     const gradient = this.ctx.createLinearGradient(
                         xPos, yPos,
                         xPos + this.blockSize,
@@ -453,13 +510,12 @@ class TetrisGame {
                     gradient.addColorStop(0, baseColor);
                     gradient.addColorStop(1, this.adjustColor(baseColor, -20));
                     
-                    // 绘制圆角矩形
                     this.drawRoundedRect(
                         xPos,
                         yPos,
                         this.blockSize,
                         this.blockSize,
-                        4, // 圆角半径
+                        4,
                         gradient
                     );
                 }
@@ -529,19 +585,71 @@ class TetrisGame {
         this.ctx.font = '16px Arial';
         this.ctx.fillText('按 P 键或点击按钮继续', this.canvas.width / 2, this.canvas.height / 2 + 30);
     }
+
+    // 添加获取最高分方法
+    getHighScore() {
+        const scores = JSON.parse(localStorage.getItem('tetrisScores') || '[]');
+        return scores.length > 0 ? Math.max(...scores.map(s => s.score)) : 0;
+    }
 }
 
-// 初始化游戏
+// 添加窗口大小改变时的处理
+window.addEventListener('resize', () => {
+    if (window.game) {
+        window.game.initCanvas();
+        window.game.draw();
+    }
+});
+
+// 立即执行的调试代码
+console.log('准备初始化游戏');
 document.addEventListener('DOMContentLoaded', () => {
-    const game = new TetrisGame();
-    
-    document.getElementById('startBtn').addEventListener('click', () => {
-        game.start();
-        document.getElementById('startBtn').style.display = 'none';
-        document.getElementById('restartBtn').style.display = 'block';
-    });
-    
-    document.getElementById('restartBtn').addEventListener('click', () => {
-        game.start();
-    });
+    console.log('DOM已加载，开始初始化游戏');
+    try {
+        // 确保所有必要的DOM元素都存在
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const canvas = document.getElementById('gameCanvas');
+
+        console.log('DOM元素检查：', {
+            startBtn: !!startBtn,
+            restartBtn: !!restartBtn,
+            pauseBtn: !!pauseBtn,
+            canvas: !!canvas
+        });
+
+        if (!canvas || !startBtn || !restartBtn || !pauseBtn) {
+            throw new Error('找不到必要的DOM元素');
+        }
+
+        // 创建游戏实例
+        window.game = new TetrisGame();
+        console.log('游戏实例已创建');
+        
+        // 初始按钮状态设置
+        restartBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+        startBtn.style.display = 'block';
+
+        // 绑定事件监听器
+        startBtn.onclick = function() {
+            console.log('开始按钮被点击');
+            window.game.start();
+            startBtn.style.display = 'none';
+            restartBtn.style.display = 'block';
+            pauseBtn.style.display = 'block';
+        };
+        
+        restartBtn.onclick = function() {
+            console.log('重新开始按钮被点击');
+            window.game.start();
+        };
+
+        // 初始绘制游戏区域
+        window.game.draw();
+        console.log('初始化完成');
+    } catch (error) {
+        console.error('游戏初始化失败:', error);
+    }
 }); 
